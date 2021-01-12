@@ -3,9 +3,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using PseudoStaticRewrite.Models;
 
 namespace PseudoStaticRewrite.Controllers
 {
+    [AutoPseudo]
     public class OrderController : Controller
     {
         public IActionResult Index(int? state, int? page)

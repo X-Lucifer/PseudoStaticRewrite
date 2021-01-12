@@ -13,6 +13,7 @@ using System.Text.Unicode;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using PseudoStaticRewrite.Models;
 
 namespace PseudoStaticRewrite
 {
@@ -55,7 +56,8 @@ namespace PseudoStaticRewrite
             {
                 //只获取Controller类型的控制器
                 var assembly = typeof(Startup).Assembly.GetTypes().AsEnumerable()
-                    .Where(x => typeof(Controller).IsAssignableFrom(x)).ToList();
+                    .Where(x => typeof(Controller).IsAssignableFrom(x) &&
+                                x.GetCustomAttributes(typeof(AutoPseudoAttribute), true).Any()).ToList();
                 foreach (var item in assembly)
                 {
                     var xname = item.Name.Replace("controller", "", StringComparison.OrdinalIgnoreCase);

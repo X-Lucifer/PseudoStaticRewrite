@@ -5,9 +5,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using PseudoStaticRewrite.Models;
 
 namespace PseudoStaticRewrite.Controllers
 {
+    [AutoPseudo]
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
