@@ -7,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
@@ -61,20 +62,24 @@ namespace PseudoStaticRewrite
                 foreach (var item in assembly)
                 {
                     var xname = item.Name.Replace("controller", "", StringComparison.OrdinalIgnoreCase);
-                    foreach (var xitem in item.GetMethods()
-                        .Where(x => x.IsPublic && (typeof(IActionResult).IsAssignableFrom(x.ReturnType) || typeof(Task<IActionResult>).IsAssignableFrom(x.ReturnType))))
+                    //只获取当前类不包括基类的方法
+                    var methods = item
+                        .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                        .Where(x => typeof(IActionResult).IsAssignableFrom(x.ReturnType) ||
+                                    typeof(Task<IActionResult>).IsAssignableFrom(x.ReturnType))
+                        .ToList();
+                    if (methods.Count <= 0)
+                    {
+                        continue;
+                    }
+                    
+                    foreach (var xitem in methods)
                     {
                         var xparam = xitem.GetParameters().Where(x =>
                             !x.IsOut && !x.IsIn).ToList();
-                        if (!xparam.Any())
-                        {
-                            //无参action默认跳过
-                            continue;
-                        }
-
                         int zi = 1;
                         //路由参数由多到少的规则匹配, 兼容可选参数
-                        for (int i = xparam.Count; i > 0; i--)
+                        for (int i = xparam.Count; i >= 0; i--)
                         {
                             var zlist = xparam;
                             zlist.RemoveRange(i, xparam.Count - i);
@@ -84,9 +89,9 @@ namespace PseudoStaticRewrite
                                 sb.Append("{" + xroute.Name + "}/");
                             }
 
-                            var route = sb.ToString().Remove(sb.Length - 1, 1);
-                            var pattern = xname + "/" + xitem.Name + "/" + route;
-                            var zname = xname + "_" + xitem.Name + "_" + zi;
+                            var route = i > 0 ? sb.ToString().Remove(sb.Length - 1, 1) : xitem.Name;
+                            var pattern = i > 0 ? xname + "/" + xitem.Name + "/" + route : xname + "/" + route;
+                            var zname = i > 0 ? xname + "_" + xitem.Name + "_" + zi : "_" + xname + "_" + xitem.Name;
                             //默认扩展名, 可支持任意扩展名. 请求时也可支持任意扩展名
                             endpoints.MapControllerRoute(name: zname, pattern: pattern + ".html",
                                 new { controller = xname, action = xitem.Name });
